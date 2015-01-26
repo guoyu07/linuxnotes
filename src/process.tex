@@ -1,0 +1,877 @@
+\part{Process}
+
+
+\chapter{Introduction}
+
+
+\section{Overview}
+
+
+进程（process）是计算机中已运行程序的实体。
+
+最初，多道批处理环境中的进程称为工作（jobs），后来在分时系统中将进程称为用户程序（user programs）或任务（tasks），现在多数情况的工作和进程是同义词。
+
+\begin{compactitem}
+\item 进程是分时系统的基本运作单位。
+\item 在面向进程设计的系统（早期的UNIX，Linux 2.4及更早的版本）中，进程是程序的基本执行实体；\item 在面向线程设计的系统（多数现代操作系统、Linux 2.6及更新的版本）中，进程本身不是基本运行单位，而是线程的容器。
+\end{compactitem}
+
+
+用户下达运行程序的命令后就会产生进程。同一程序可产生多个进程（一对多关系），以允许同时有多位用户运行同一程序，却不会相冲突。
+
+\begin{compactitem}
+\item 程序本身只是指令、数据及其组织形式的描述，进程才是程序（那些指令和数据）的真正运行实例。
+\item 若干进程有可能与同一个程序相关系，且每个进程皆可以同步（循序）或异步（平行）的方式独立运行。
+\end{compactitem}
+
+进程需要一些资源才能完成工作（例如CPU使用时间、存储器、文件以及I/O设备），并且依序逐一进行，也就是每个CPU核心任何时间内仅能运行一项进程。
+
+
+现代计算机系统可在同一段时间内以进程的形式将多个程序加载到存储器中，并借由时间共享（或称时分复用），以在一个处理器上表现出同时（平行性）运行的感觉。同样的，使用多线程技术（多线程即每一个线程都代表一个进程内的一个独立执行上下文）的操作系统或计算机架构，同样程序的平行线程，可在多CPU主机或网络上真正同时运行（在不同的CPU上）。
+
+
+
+
+UNIX/类UNIX的所有命令与用户能够进行的操作都与权限有关，用户的权限与UID/GID以及文件的属性相关。
+
+例如，在Linux系统中，触发任何一个事件时，操作系统都会将其实现为一个进程，并且触发这个进程的用户与相关属性的关系等相关数据也会加载到内存中。
+
+用户在执行一个程序或命令时就触发了一个事件而产生一个PID，而且程序（或命令）会被加载到内存中成为一个进程，同时依据与PID相关的一组有效的权限设置来判断PID能够执行的操作。
+
+
+从操作系统的角度来看，内存中的数据都是与进程相关的，而且操作系统通过PID来判断进程的执行者的权限/属性等参数，以及进程所需要的脚本、数据和文件数据等。例如，操作系统根据登录用户的UID/GID（/etc/passwd）来给不同的用户的bash赋予PID，因此不同的用户登录操作系统时获取的bash的权限是不同的。
+
+进程就是运行中的程序，而且每个进程都至少有三组权限，不同的用户身份执行程序时获得的权限也不尽相同。例如，用户使用touch来创建一个空文件时，不同的用户的权限如下：
+
+\begin{compactitem}
+\item root的权限是UID/GID=0/0；
+\item 普通用户的权限可能是UID/GID=501/501。
+\end{compactitem}
+
+
+\section{Process Content}
+
+一个进程包括（或者说“拥有”）的数据包括：
+
+\begin{compactitem}
+\item 那个程序的可运行机器码的一个在存储器的映像。
+\item 分配到的存储器（通常是虚拟的一个存储器区域）。
+\item 分配给该进程的资源的操作系统描述符，例如文件描述符（Unix）或文件句柄（Windows）、数据源和数据终端。
+\item 安全特性，例如进程拥有者和进程的权限集（可以容许的操作）。
+\item 处理器状态（内文），例如暂存器内容、物理存储器寻址等。
+\end{compactitem}
+
+在执行进程时，存储器的内容可以包括可执行代码、特定于进程的数据（输入和输出）、调用堆栈、堆栈（用于保存运行时运输中途产生的数据），而且当进程正在运行时，状态通常存储在暂存器，其他情况在存储器。
+
+
+
+\section{Process State}
+
+
+进程的状态就是指进程目前的动作，而且在进程运行时，状态（state）会改变。
+
+\begin{compactitem}
+\item 新生（new）：进程新产生中。
+\item 运行（running）：正在运行。
+\item 等待（waiting）：等待某事发生，例如等待用户输入完成。亦称“阻塞”（blocked）
+\item 就绪（ready）：排班中，等待CPU。
+\item 退出（terminated）：完成运行。
+\end{compactitem}
+
+进程的状态名称可能随不同操作系统而相异。例如，对于单CPU系统，任何时间可能有多个进程为等待、就绪状态，但是必定仅有一个进程在运行。
+
+进程控制块（PCB，Process Control Block）是操作系统核心中用于表示进程状态的数据结构。
+
+通常情况下，进程控制块用于记载进程的相关信息，包括：
+
+\begin{compactitem}
+\item 进程状态：可以是new、ready、running、waiting或 blocked等。
+\item 程序计数器：接着要运行的指令地址。
+\item CPU暂存器：累加器、索引暂存器（Index register）、堆栈指针以及一般用途暂存器、状况代码等，主要用于中断时暂时存储数据，以便稍后继续利用，其数量及类因电脑架构有所差异。
+\item CPU排班法：优先级、调度队列等指针以及其他参数。
+\item 存储器管理：标签页表等。
+\item 统计信息：CPU与实际时间的使用数量、时限、账号、工作或进程号码。
+\item 输入输出状态：配置进程使用I/O设备（例如磁带机）。
+\end{compactitem}
+
+
+
+\section{Parent Process}
+
+在计算机领域，进程之间的相关性产生了父子进程等，例如父进程（Parent Process）就是创建了一个或多个子进程的进程。
+
+根据父进程的定义可知，PPID（Parent PID）用来判断父进程的PID，子进程可以继承父进程的环境变量等数据。
+
+在POSIX.1-2001标准规定中，父进程可将SIGCHLD的处理函数设为SIG\_IGN（亦为默认设定），或为SIGCHLD设定SA\_NOCLDWAIT标记，以使内核可以自动回收已终止的子进程的资源。
+
+
+自Linux 2.6与FreeBSD 5.0起，两种内核皆支持了上述这两种方式。
+
+不过，在忽略SIGCHLD信号的问题上，由于System V与BSD由来已久的差异，若要回收派生出的子进程的资源，调用wait仍是最便捷的方式。
+
+
+\subsection{UNIX}
+
+在UNIX里，除了进程0（即PID=0的交换进程，Swapper Process）以外的所有进程都是由其他进程使用系统调用fork创建的，这里调用fork创建新进程的进程即为父进程，而相对应的为其创建出的进程则为子进程，因而除了进程0以外的进程都只有一个父进程，但一个进程可以有多个子进程。
+
+操作系统内核以进程标识符（Process Identifier，即PID）来识别进程。
+
+\begin{compactitem}
+\item 进程0是系统引导时创建的一个特殊进程，在其调用fork创建出一个子进程（即PID=1的进程1，又称init）后，进程0就转为交换进程（有时也被称为空闲进程）。
+\item 进程1（init进程）就是系统里其他所有进程的祖先。
+\end{compactitem}
+
+当一个子进程结束运行（一般是调用exit、运行时发生致命错误或收到终止信号所导致）时，子进程的退出状态（返回值）会回报给操作系统，系统则以SIGCHLD信号将子进程被结束的事件告知父进程，此时子进程的进程控制块（PCB）仍驻留在内存中。
+
+
+一般来说，收到SIGCHLD后，父进程会使用wait系统调用以获取子进程的退出状态，然后内核就可以从内存中释放已结束的子进程的PCB。但是，如果父进程没有这么做的话，子进程的PCB就会一直驻留在内存中，也即成为僵尸进程。
+
+
+为避免产生僵尸进程，实际应用中一般采取的方式如下：
+
+\begin{compactitem}
+\item 将父进程中对SIGCHLD信号的处理函数设为SIG\_IGN（忽略信号）；
+\item fork两次并杀死一级子进程，令二级子进程成为孤儿进程而被init所“收养”或清理。
+\end{compactitem}
+
+孤儿进程则是指父进程结束后仍在运行的子进程。
+
+在类UNIX系统中，孤儿进程一般会被init进程所“收养”，从而成为init的子进程。
+
+
+
+
+\subsection{Linux}
+
+
+实际上，在Linux中执行一个命令时，操作系统会将相关的权限、属性、程序和数据都加载到内存中，并给予该单元一个进程标识符（PID），而且最终该命令可以执行的任务还与PID的权限相关。
+
+在Linux内核中，进程和POSIX线程有着相当微小的区别，父进程的定义也与UNIX不尽相同。
+
+
+Linux有两种父进程，分别称为（形式）父进程与实际父进程，对于一个子进程来说，其父进程是在子进程结束时收取SIGCHLD信号的进程，而实际父进程则是在多线程环境里实际创建该子进程的进程。
+
+
+对于普通进程来说，父进程与实际父进程是同一个进程，但对于一个以进程形式存在的POSIX线程，父进程和实际父进程可能是不一样的。
+
+Linux中的子进程和父进程之间的关系可以描述为fork-and-exec，首先通过父进程以fork（复制）的方式生成一个相同的暂存进程（其和父进程的唯一区别是PID不同），然后经过fork获得的子进程以exec的方式来执行实际需要执行的进程，并最终成为一个独立运行的子进程。
+
+如果进程启动之后就在后台一直持续运行，或者说常驻在内存中，它们就被称为服务，而且服务需要守护进程（daemon）来实现。
+
+
+一般情况下，系统服务可以分为系统自身需要的服务和网络服务等，而且网络服务需要启动一个指定的端口来接收客户端的请求和回应。
+
+\begin{compactitem}
+\item crond、atd和syslogd等。
+\item httpd、mysqld、named、vsftpd、postfix等。
+\end{compactitem}
+
+
+
+
+
+\section{Child Process}
+
+在计算机领域中，子进程为由另外一个进程（对应称之为父进程）所创建的进程。子进程继承了父进程的大部分属性（例如文件描述符）。
+
+在Unix中，子进程通常为系统调用fork的产物，因此子进程开始时是父进程的副本。
+
+
+
+根据具体需要，子进程还可以借助exec调用来链式加载另外的程序，并且可以以\texttt{pstree PID}的方式查询PID对应进程的子进程。
+
+\begin{verbatim}
+$ pstree 2594
+chrome-sandbox───chrome─┬─chrome─┬─3*[chrome───10*[{chrome}]]
+                        │        ├─13*[chrome───9*[{chrome}]]
+                        │        ├─10*[chrome───11*[{chrome}]]
+                        │        ├─2*[chrome───8*[{chrome}]]
+                        │        ├─chrome───12*[{chrome}]
+                        │        ├─3*[chrome───18*[{chrome}]]
+                        │        └─chrome───76*[{chrome}]
+                        └─chrome-sandbox───nacl_helper
+\end{verbatim}
+
+
+一个进程可能下属多个子进程，但是最多只能有1个父进程。如果某一进程没有父进程，则进程很可能由内核直接生成的。
+
+
+
+\section{Init Process}
+
+
+在Unix与类Unix系统中，进程ID为1的进程（即init进程）是在系统引导阶段由内核直接创建的，且不会在系统运行过程中终止执行。
+
+对于其他无父进程的进程，则可能是为在用户空间完成各种后台任务而执行的。
+
+
+当某一子进程结束、中断或恢复执行时，内核会发送SIGCHLD信号予其父进程。在默认情况下，父进程会以SIG\_IGN函数进行忽略。
+
+\section{Orphan Process}
+
+在操作系统领域中，孤儿进程指的是在其父进程执行完成或被终止后仍继续运行的一类进程。
+
+一般情况下，在对应的父进程结束执行后，进程就会变成孤儿进程，但是之后会立即由init进程“收养”为其子进程。
+
+
+\subsection{Process Re-parenting}
+
+在相容于POSIX标准的操作系统中，进程组（Process group）是指一个或多个进程的集合。
+
+进程组被使用于控制信号的分配，而且一个进程组发出的的信号会被个别传递到该进程组下的每个进程成员中。
+
+在类UNIX操作系统中，为避免孤儿进程退出时无法释放所占用的资源而僵死，任何孤儿进程产生时都会立即为系统进程init自动接收为子进程，这一过程也被称为“收养”（re-parenting）
+
+不过，虽然事实上该进程已有init作为其父进程，但由于创建该进程的进程已不存在，所以仍应称之为“孤儿进程”。
+
+\subsection{Process Group}
+
+父进程终止或崩溃都会导致对应子进程成为孤儿进程，因此也无法预料一个子进程执行期间是否会被“遗弃”。
+
+多数类UNIX系统都引入了进程组以防止产生孤儿进程：在父进程终止后，用户的Shell会将父进程所在进程组标为“孤儿进程组”，并向终止的进程下属所有子进程发出SIGHUP信号以试图结束其运行，从而避免子进程继续以“孤儿进程”的身份运行。
+
+RPC过程中也会产生孤儿进程。例如，若客户端进程在发起请求后突然崩溃，且对应的服务器端进程仍在运行，则该服务器端进程就会成为孤儿进程。这样的孤儿进程会浪费服务器的资源，甚至有耗尽资源的潜在危险，但也有对应的解决办法：
+
+\begin{compactitem}
+\item 终止机制：强制杀死孤儿进程（最常用的手段）；
+\item 再生机制：服务器在指定时间内查找调用的客户端，若找不到则直接杀死孤儿进程；
+\item 超时机制：给每个进程指定一个确定的运行时间，若超时仍未完成则强制终止之。若有需要，亦可让进程在指定时间耗尽之前申请延时。
+\end{compactitem}
+
+除此之外，用户也可能会刻意使进程成为孤儿进程，以使之与用户会话脱钩，并转至后台运行。
+
+实际上，上述这一做法常应用于启动需要长时间运行的进程（也即守护进程）。
+
+另外，UNIX命令nohup也可以完成这一操作。
+
+
+\subsection{Session Group}
+
+
+进程组本身也可以被集合成一个群组来管理，称为会话群组（sessions）。
+
+归属于某个特定会话群组下的进程组不能移动到别的会话组下，在某个进程组下的特定行程在创造出新的进程时，这个进程也只能属于这个父进程所归属的相同会话群组。
+
+
+\subsection{Control groups}
+
+cgroups（control groups）是Linux内核的一个功能，用来限制、控制与分离一个进程组群的资源（如CPU、内存、磁盘输入输出等）。
+
+cgroups项目由Google工程师Paul Menage和Rohit Seth在2006年发起，最早的名称为进程容器（process containers）。
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[scale=0.3]{Linux_kernel_unified_hierarchy_cgroups_and_systemd.png}
+\caption{Unified hierarchy cgroups}
+\end{figure}
+
+cgroups的一个设计目标是为不同的应用情况提供统一的接口，从控制单一进程（例如nice）到系统级虚拟化（例如opeNVZ、Linux-VServer、LXC），而且可以提供如下的特性：
+
+\begin{compactitem}
+\item 资源限制：组可以被设置不超过设定的内存限制（其中也包括虚拟内存）。
+
+\item 优先化：一些组可能会得到大量的CPU或磁盘输入输出通量。
+\item 报告：用来衡量系统确实把多少资源用到适合的目的上。
+\item 分离：为组分离命名空间，这样一个组不会看到另一个组的进程、网络连接和文件。
+\item 控制：冻结组或检查点和重启动。
+\end{compactitem}
+
+
+
+
+
+\section{Zombie Process}
+
+
+\subsection{Overview}
+
+
+某一子进程终止执行后，若其父进程未提前调用wait，则内核会持续保留子进程的退出状态等信息，以使父进程可以wait获取它。
+
+在这种情况下，子进程虽已终止，但是仍然在消耗系统资源，所以其亦称僵尸进程。
+
+
+wait常于SIGCHLD信号的处理函数中调用。例如，子进程死后，系统会发送SIGCHLD 信号给父进程，父进程对其默认处理是忽略。
+
+如果想响应这个消息，父进程通常在SIGCHLD 信号事件处理程序中，使用wait系统调用来响应子进程的终止。
+
+
+
+
+在类UNIX系统中，僵尸进程是指完成执行（通过exit系统调用，或运行时发生致命错误或收到终止信号所致）但在操作系统的进程表中仍然有一个表项（进程控制块PCB），处于"终止状态"的进程。
+
+
+僵尸进程发生于子进程需要保留表项以允许其父进程读取子进程的exit status时，一旦退出态通过wait系统调用读取，僵尸进程条目就从进程表中删除，称之为"回收（reaped）"。
+
+正常情况下，进程直接被其父进程wait并由系统回收，如果进程长时间保持僵尸状态一般是错误的并导致资源泄漏。
+
+UNIX命令ps列出的进程的状态（"STAT"）栏标示为 "Z"则为僵尸进程。
+
+\begin{verbatim}
+$ ps aux
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.0  50924  3996 ?        Ss   10:39   0:01 /usr/lib/system
+root         2  0.0  0.0      0     0 ?        S    10:39   0:00 [kthreadd]
+\end{verbatim}
+
+
+
+与正常进程不同，kill命令对僵尸进程无效，因此收割僵尸进程的正确方法是通过kill命令手工向其父进程发送SIGCHLD信号。如果其父进程仍然拒绝收割僵尸进程，则终止父进程，使得init进程收养僵尸进程。init进程周期执行wait系统调用收割其收养的所有僵尸进程。
+
+孤儿进程不同于僵尸进程，其父进程已经死掉，但是孤儿进程仍能正常执行，而且并不会变为僵尸进程，因为被init（进程ID号为1）收养并wait其退出。
+
+僵尸进程被收割后，其进程号(PID)与在进程表中的表项都可以被系统重用。但如果父进程没有调用wait，僵尸进程将保留进程表中的表项，导致了资源泄漏。
+
+不过，某些情况下这反倒是期望的：父进程创建了另外一个子进程，并希望具有不同的进程号。如果父进程通过设置事件处理函数为SIG\_IGN显式忽略SIGCHLD信号，而不是隐式默认忽略该信号，或者具有SA\_NOCLDWAIT标志，所有子进程的退出状态信息将被抛弃并且直接被系统回收。
+
+为避免产生僵尸进程，实际应用中一般采取的方式如下：
+
+\begin{compactitem}
+\item 将父进程中对SIGCHLD信号的处理函数设为SIG\_IGN（忽略信号）；
+\item fork两次并杀死一级子进程，从而使二级子进程成为孤儿进程而被init所“收养”和清理。
+\end{compactitem}
+
+
+\begin{lstlisting}[language=C]
+#include <sys/wait.h>
+#include <stdlib.h>
+#include <unistd.h>
+ 
+int main(void)
+{
+	pid_t pids[10];
+	int i;
+ 
+	for (i = 9; i >= 0; --i) {
+		pids[i] = fork();
+		if (pids[i] == 0) {
+			sleep(i+1);
+			_exit(0);
+		}
+	}
+ 
+	for (i = 9; i >= 0; --i)
+		waitpid(pids[i], NULL, 0);
+ 
+	return 0;
+}
+\end{lstlisting}
+
+
+\chapter{PID}
+
+
+\section{Introduction}
+
+在计算机领域，进程标识符（process identifier或PID）是大多数操作系统的内核用于唯一标识进程的一个数值。
+
+
+
+
+
+
+
+在类UNIX操作系统中，新进程都衍自系统调用fork()，fork()调用会将子进程的PID返回给父进程，使其可以之指代子进程，从而在需要时以之为函数参数。
+
+\begin{compactitem}
+\item 若以子进程PID为参数调用waitpid()，可使父进程以休眠状态等待子进程结束；
+\item 若以子进程PID为参数调用kill()，便可结束对应子进程。
+\end{compactitem}
+
+PID可以作为许多函数调用的参数来执行调整进程优先级、杀死进程之类的进程控制行为。
+
+\begin{compactitem}
+\item PID为0的进程称为交换进程（swapper），属于内核进程，负责分页任务；
+\item PID为1的进程称为init进程，主要负责启动与关闭系统。
+\end{compactitem}
+
+1号PID本来并非是特意为init进程预留的，而init进程之所以拥有这一PID，则是因为init即是内核创建的第一个进程。不过，许多UNIX/类UNIX系统内核也有以进程形式存在的其他组成部分，而在这种情况下，1号PID则仍为init进程保有，以与之前系统保持一致。
+
+
+
+
+
+PID的分配机制则因系统而异，一般从0开始，然后顺序分配，直到达到一个最大值（亦因系统而异），而后又从300开始重新分配。不过，在Mac OS X和HP-UX是由100开始重分配。
+
+在分配PID时，若遇到已分配的PID，则直接跳过，继续递增查找下一个可分配PID。
+
+另外，有些长期运行的进程（如MySQL的守护进程）会将自己的PID写入一个文件，以使其他进程可以获取。
+
+\begin{verbatim}
+# ls -l /run/mysqld/mysqld.pid
+-rw-rw----. 1 mysql mysql 5 Jan 16 10:40 mysqld.pid
+# cat /run/mysql/mysqld.pid
+1051
+# pidof mysqld
+1051
+# pgrep mysqld
+887
+1051
+# ps aux | grep mysqld
+mysql      887  0.0  0.0 113120   768 ?        Ss   10:40   0:00 /bin/sh /usr/bin/mysqld_safe --basedir=/usr
+mysql     1051  0.0  0.0 548780  1584 ?        Sl   10:40   0:14 /usr/libexec/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib64/mysql/plugin --log-error=/var/log/mysqld.log --pid-file=/var/run/mysqld/mysqld.pid --socket=/var/lib/mysql/mysql.sock
+\end{verbatim}
+
+
+
+Windows操作系统提供了一系列API以使开发者可以获取相关PID，例如用于获取当前进程PIDGetCurrentProcessId()、返回其他进程PID的GetProcessId()。
+
+
+
+\chapter{Shell Background}
+
+\section{\&}
+
+
+在进行bash的job control时必须要注意到的限制包括：
+
+\begin{compactitem}
+\item 由工作触发的进程必须来自shell的子进程；
+\item 可以控制和执行命令的环境称为前台；
+\item 可以自行执行工作的环境称为后台；
+\item 后台执行的进程不能等待终端或shell的输入。
+\end{compactitem}
+
+例如，为了在执行后台进程时屏蔽输出，可以将输出指定到某个文件中。
+
+\begin{verbatim}
+$ tar -zpcvf /home/theqiong/test/ > /tmp/test/ 2>&1 &
+[1] 8970
+\end{verbatim}
+
+后台进程分配到的工作号码（job number）只与当前的bash环境有关，而且job number也会搭配一个PID。
+
+\section{suspend}
+
+
+如果需要暂停后台工作，可以使用ctrl-z，而且默认情况下ctrl-z可以暂停所有的后台工作。
+
+\section{jobs}
+
+jobs命令可以用来查看当前后台的工作状态。
+
+
+
+\begin{compactitem}
+\item -l表示在列出job number与命令时也列出PID的号码；
+\item -r表示仅列出正在后台执行的工作；
+\item -s表示仅列出正在后台中暂停的工作。
+\end{compactitem}
+
+
+\begin{verbatim}
+$ ls & jobs -l
+[1] 13854
+[1]+ 13854 Running                 ls --color=auto &
+anaconda-ks.cfg  pass
+[1]+  Done                    ls --color=auto
+\end{verbatim}
+
+
+\begin{compactitem}
+\item +表示最近被放入后台的工作的号码；
+\item -表示在最后的工作之前被放入后台的工作的号码。
+\end{compactitem}
+
+\section{fg}
+
+fg可以用来将后台工作放入前台来继续执行。
+
+\begin{verbatim}
+$ fg %jobnumber
+$ fg +
+$ fg -
+\end{verbatim}
+
+\section{bg} 
+
+默认情况下，ctrl-z将工作放入后台中并暂停，bg命令可以让后台中的工作状态由暂停变为运行。
+
+
+
+\section{kill} 
+
+kill可以用来管理后台中的工作。
+
+\begin{verbatim}
+kill -singal %jobnumber
+\end{verbatim}
+
+默认情况下，kill后跟的数字是PID，在进行bash的工作控制时需要使用\%来表示工作号码。
+
+kill命令可以向后台的工作传递指定的信号，其中kill命令支持的信号可以使用-l参数来列出。
+
+\begin{verbatim}
+$ kill -l
+ 1) SIGHUP	 2) SIGINT	 3) SIGQUIT	 4) SIGILL	 5) SIGTRAP
+ 6) SIGABRT	 7) SIGBUS	 8) SIGFPE	 9) SIGKILL	10) SIGUSR1
+11) SIGSEGV	12) SIGUSR2	13) SIGPIPE	14) SIGALRM	15) SIGTERM
+16) SIGSTKFLT	17) SIGCHLD	18) SIGCONT	19) SIGSTOP	20) SIGTSTP
+21) SIGTTIN	22) SIGTTOU	23) SIGURG	24) SIGXCPU	25) SIGXFSZ
+26) SIGVTALRM	27) SIGPROF	28) SIGWINCH	29) SIGIO	30) SIGPWR
+31) SIGSYS	34) SIGRTMIN	35) SIGRTMIN+1	36) SIGRTMIN+2	37) SIGRTMIN+3
+38) SIGRTMIN+4	39) SIGRTMIN+5	40) SIGRTMIN+6	41) SIGRTMIN+7	42) SIGRTMIN+8
+43) SIGRTMIN+9	44) SIGRTMIN+10	45) SIGRTMIN+11	46) SIGRTMIN+12	47) SIGRTMIN+13
+48) SIGRTMIN+14	49) SIGRTMIN+15	50) SIGRTMAX-14	51) SIGRTMAX-13	52) SIGRTMAX-12
+53) SIGRTMAX-11	54) SIGRTMAX-10	55) SIGRTMAX-9	56) SIGRTMAX-8	57) SIGRTMAX-7
+58) SIGRTMAX-6	59) SIGRTMAX-5	60) SIGRTMAX-4	61) SIGRTMAX-3	62) SIGRTMAX-2
+63) SIGRTMAX-1	64) SIGRTMAX	
+\end{verbatim}
+
+其中，由man 7 signal可以找到常用的signal如下：
+
+\begin{compactitem}
+\item -1表示重新读取参数的配置文件（类似reload）；
+\item -2表示与ctrl-z同样的操作；
+\item -9表示立刻强制删除一个工作；
+\item -15表示以正常的方式终止某项工作，其意义与\texttt{kill -SIGTERM \%jobnumber}相同。
+\end{compactitem}
+
+
+
+\section{killall} 
+
+
+\chapter{OS Background}
+
+
+
+
+
+\section{at} 
+
+与当前Shell环境的后台不同，at可以用于在操作系统的后台来调度仅执行一次就结束的任务，并且与终端无关。
+
+at的执行必须要有atd服务的支持，并且/etc/at.deny可以控制是否能够执行的用户帐号。
+
+\begin{verbatim}
+# systemctl enable atd.service
+# chkconfig atd.service
+Note: Forwarding request to 'systemctl is-enabled atd.service'.
+enabled
+
+# systemctl start atd.service
+Redirecting to /bin/systemctl start  atd.service
+# systemctl status atd.service
+systemctl status atd
+atd.service - Job spooling tools
+   Loaded: loaded (/usr/lib/systemd/system/atd.service; enabled)
+   Active: active (running) since Sat 2015-01-17 13:05:54 CST; 2h 47min ago
+ Main PID: 710 (atd)
+   CGroup: /system.slice/atd.service
+           └─710 /usr/sbin/atd -f
+
+Jan 17 15:53:07 theqiong systemd[1]: Started Job spooling tools.
+\end{verbatim}
+
+
+
+\subsection{atq}
+
+atq命令可以查询at的工作调度。
+
+\subsection{atrm}
+
+atrm可以删除at的工作调度。
+
+
+
+\section{batch}
+
+batch和at都可以执行工作调度，只是batch可以在CPU负载小于0.8时才进行后续的工作调度。
+
+
+
+
+\section{nohup}
+
+
+nohup命令可以允许用户在脱机或注销系统后继续执行工作。
+
+
+\begin{verbatim}
+$ nohup COMMAND [ARG]...
+$ nohup OPTION
+$ nohup COMMAND &
+\end{verbatim}
+
+nohup并不支持bash内置的命令，只能支持外部命令。
+
+
+\section{chroot} 
+
+
+
+
+\section{cron} 
+
+
+操作系统使用cron服务来执行循环例行性工作调度，可以设置的时间为分钟、小时、每周、每月或每年等。
+
+基本上，Linux系统需要的例行性任务包括日志轮替、日志分析、更新数据库（locate和whatis数据库）、软件日志、临时文件和网络服务等。
+
+\begin{verbatim}
+# updatedb
+# ls -l /var/lib/mlocate/mlocate.db
+-rw-r-----. 1 root slocate 29481009 Jan 17 15:26 /var/lib/mlocate/mlocate.db
+# ls -l /var/cache/man/index.db
+-rw-r--r--. 1 root root 2826240 Jan 17 14:27 index.db
+# tmpwatch 
+\end{verbatim}
+
+
+
+
+\subsection{crontab}
+
+
+
+crontab支持命令和/etc/crontab。
+
+\begin{verbatim}
+# crontab -e
+\end{verbatim}
+
+\texttt{crontab -e}可以用来进行调度安排，其中的设置项分为六列，可以依据分、时
+日、月、周和命令来进行调度设置。
+
+
+
+
+/etc/crontab中指定了循环调度的设置，其中的设置可以分为七列，分别是分、时、日、月、周、用户名和命令。
+
+\begin{verbatim}
+# cat /etc/crontab
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+
+# For details see man 4 crontabs
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name  command to be executed
+\end{verbatim}
+
+
+
+\section{anacron}
+
+anacron配合/etc/anacrontab的设置，可以唤醒停机期间系统未进行的crontab任务。
+
+
+\section{wait}
+
+多进程系统内的进程（或任务）有时需要等待其他进程以完成自己的执行过程，而在包含父-子进程机制的类UNIX系统中，父进程能创建可独立运行的子进程，并在需要时调用wait（函数声明为\texttt{pid\_t wait(int *stat\_loc)}）以使自己在子进程执行过程中保持休眠状态。
+
+当任一子进程结束后，该子进程会向操作系统返回一个退出状态，而后系统即向休眠中的父进程发送一个SIGCHLD信号以提醒之，至此父进程“复苏”并从内核获取子进程的退出状态，而后内核释放原有子进程所占用的资源，父进程也继续执行。
+
+
+对于带有线程机制的类UNIX系统来说，对于线程调度也有对应wait的实现。例如，pthread\_join会让当前进程强制休眠，等待指定线程执行完毕后再继续执行。
+
+类UNIX系统还提供多种wait的派生调用（如waitpid和waitid）以扩展适用范围。借助于这些变种，父进程可以休眠至任一子进程结束，也可以等待满足指定条件（如匹配给定的进程标识符）的子进程结束后再继续执行。
+
+另外，若利用额外选项做参数，waitpid和waitid在指定进程继续运行或暂停执行时也会返回。
+
+即使没有提前调用wait，在任一进程终止后，系统内核都会向其父进程发送SIGCHLD，这时父进程可以选择使用SIG\_IGN作为处理函数，令内核知晓自己不需获得状态，并直接交由init进程处理。或者，也可调用wait，则立即返回子进程退出状态。
+
+若两者皆不做，则子进程在进程表中占用的资源就无法得到释放，进而成为僵尸进程，持续浪费资源。
+
+为解决这一问题，系统常以特殊进程reaper（“收割者”）定位僵尸进程，并获取其状态以使系统可以解除资源分配，从而实现进程“收割”。
+
+\section{nice} 
+
+
+
+
+\chapter{Process Management}
+
+\section{ps} 
+
+在大多数类Unix操作系统中，ps程序（“process status”的简称）可以显示当前运行的进程，top则可以查看运行进程的实时信息。
+
+在Windows PowerShell中，ps是Get-Process cmdlet的预定义命令别名，它和Unix中的ps本质上是相同的。
+
+用户可以利用ps命令和grep结合来查找一个进程的信息，例如其进程ID：
+
+\begin{verbatim}
+$ ps -A | grep mysqld
+  887 ?        00:00:00 mysqld_safe
+ 1051 ?        00:00:14 mysqld
+$ pgrep -l mysqld
+887 mysqld_safe
+1051 mysqld
+\end{verbatim}
+
+如果需要查看以root用户运行的进程，可以执行下面的命令：
+
+\begin{verbatim}
+# ps -U root -u
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.1  50924  5032 ?        Ss   10:39   0:02 /usr/lib/systemd/systemd --switched-roo
+root         2  0.0  0.0      0     0 ?        S    10:39   0:00 [kthreadd]
+root         3  0.0  0.0      0     0 ?        S    10:39   0:00 [ksoftirqd/0]
+root         5  0.0  0.0      0     0 ?        S<   10:39   0:00 [kworker/0:0H]
+\end{verbatim}
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+列名		&内容\\
+\hline
+ \%CPU	&进程正在使用多少个CPU\\
+\hline
+ \%MEM	&进程正在使用多少内存\\
+\hline
+ADDR	&进程的内存地址\\
+\hline
+C或CP	&CPU使用率和调度信息\\
+\hline
+COMMAND	&进程名，包括参数\\
+\hline
+NI	&nice值\\
+\hline
+F	&标志\\
+\hline
+PID	&进程ID\\
+\hline
+PPID	&父进程ID\\
+\hline
+PRI	&进程优先级\\
+\hline
+RSS	&真实内存用量\\
+\hline
+S or STAT	&进程状态码\\
+\hline
+START or STIME	&进程启动时间\\
+\hline
+SZ	&虚拟内存用量\\
+\hline
+TIME	&总CPU用量\\
+\hline
+TT或TTY	&与进程相关的终端\\
+\hline
+UID或USER	&进程所有者的用户名\\
+\hline
+WCHAN	&进程所等待事件的内存地址\\
+\hline
+\end{tabular}
+\end{table}
+
+在支持SUS和POSIX标准的操作系统上，ps常以选项-ef运行，其中“-e”选择每一个（every）进程，“-f”指定“完整”（full）输出格式。
+
+\begin{verbatim}
+$ ps -ef
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 10:39 ?        00:00:02 /usr/lib/systemd/systemd --switched-root --system --dese
+root         2     0  0 10:39 ?        00:00:00 [kthreadd]
+root         3     2  0 10:39 ?        00:00:01 [ksoftirqd/0]
+root         5     2  0 10:39 ?        00:00:00 [kworker/0:0H]
+\end{verbatim}
+
+另外，ps的另一个常见选项是-l，它指定“长”（long）输出格式。
+
+大多数源自BSD的系统无法接受SUS和POSIX的标准选项（例如“e”或“-e”选项将显示环境变量），因此ps在这样的系统中常使用辅助非标准选项aux。
+
+\begin{verbatim}
+$ ps aux
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.1  50924  5032 ?        Ss   10:39   0:02 /usr/lib/systemd/systemd --switched-root
+root         2  0.0  0.0      0     0 ?        S    10:39   0:00 [kthreadd]
+root         3  0.0  0.0      0     0 ?        S    10:39   0:01 [ksoftirqd/0]
+root         5  0.0  0.0      0     0 ?        S<   10:39   0:00 [kworker/0:0H]
+\end{verbatim}
+
+
+\begin{compactitem}
+\item “a”列出了一个终端上的所有进程，包括其他用户运行的；
+\item “x”列出所有没有控制终端的进程；
+\item “u”添加了一列显示每个进程的控制用户。
+\end{compactitem}
+
+需要注意的是，为了最大的兼容性，使用此语法时“aux”前没有“-”。
+
+此外，在aux之后添加“ww”可以显示进程的完整信息（包括所有的参数），例如“ps auxww”。
+
+\section{pgrep} 
+
+pgrep命令可搜索出所有名字与所给正则表达式相匹配的进程，而后在默认情况下返回相应进程标识符。如果带上\texttt{-l}为参数，则一并返回进程名。
+
+除此之外，还可指定搜索的进程组范围（-g）、进程所属用户（-u）、是否最近启动进程（-n）与反转搜索（-v）。
+
+
+
+
+
+
+\section{pidof} 
+
+pidof 是Linux下用来查找正在运行进程的进程ID (PID)，在其他的操作系统中大多使用pgrep 和 ps 来替代。
+
+\begin{verbatim}
+$ pidof ntpd
+3580 3579
+$ pidof emacs
+22256
+$ pidof file
+10269
+\end{verbatim}
+
+
+
+pidof 一般通过符号链接到“killall5"实现其功能。
+
+\section{pkill} 
+
+
+
+\section{pstree} 
+
+
+
+\section{time} 
+
+
+
+\section{top}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

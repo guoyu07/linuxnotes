@@ -1,0 +1,243 @@
+\part{Daemon}
+
+
+\chapter{Introduction}
+
+
+\section{Overview}
+
+
+
+
+
+守护进程（daemon）是指在UNIX或其他多任务操作系统中在后台执行的程序，而且不会接受用户的直接操控。
+
+daemon主要包括stand alone（可单独启动）和super daemon两类，其中super daemon管理的连接机制可以分为multi-threaded和single-threaded。
+
+一般情况下，stand alone daemon启动的脚本位于/etc/init.d/目录中，并且可以使用service、systemctl等命令来管理服务。
+
+daemon通常会被以进程的形式初始化，守护进程程序的名称通常以字母“d”结尾。例如，syslogd就是指管理系统日志的守护进程。
+
+
+
+通常情况下，守护进程没有任何存在的父进程（即PPID=1），并且在UNIX系统进程层级中直接位于init之下。
+
+守护进程程序通常通过如下方法使自己成为守护进程：对一个子进程调用fork，然后使其父进程立即终止，使得这个子进程能在init下运行，因此这种方法通常被称为“脱壳”。
+
+操作系统通常在启动时一同启动守护进程。
+
+\begin{compactitem}
+\item 在DOS环境中的守护进程被称为驻留程序（TSR）。
+\item 在Windows系统中使用Windows服务来履行守护进程的职责。
+\item Mac OS系统中将守护进程称为“extensions”。
+\item Mac OS X有守护进程，而且其“服务”不同于Windows中的服务。
+\end{compactitem}
+
+
+
+具体来说，守护进程为对网络请求、硬件活动等进行响应，或其他通过某些任务对其他应用程序的请求进行回应提供支持。
+
+
+
+
+另外，守护进程也能够对硬件进行配置（例如Linux系统中的devfsd）、运行计划任务（例如cron），以及运行其他任务。
+
+
+
+
+\section{Background Process}
+
+后台进程（Background Process）是一种在不需用户干预的情况下运行于操作系统后台的计算机进程，通常用于执行如日志记录、系统监测、作业调度以及用户提醒等任务。
+
+在UNIX与类UNIX系统中，后台进程的进程组ID（即PGID，可用ps命令获得）与控制终端进程组ID（即TPGID）不同，因而也可以此辨识后台进程。
+
+后台进程无法接收从键盘传送的信号（如Ctrl-C），因此从更专业的定义来说，程序是否能收到用户的中断信号并非后台进程的判别标准。
+
+后台进程通常用于仅需少量资源的应用，但任何进程无论占用资源多少都可以运行在后台，且即使程序在后台运行，其行为与前台进程也并无差异。
+
+在类UNIX系统的命令行模式下，用户可使用“\&”操作符以启动进程并使之运行于后台，但是标准输出（stdout）和标准错误输出（stderr）若未重定向则仍于前台（即当前父终端）输出。
+
+移动设备操作系统上的后台程序所能完成的任务与能分配到的资源也因硬件性能差异而常有所限制，例如：
+
+\begin{compactitem}
+\item Android上后台进程的CPU使用率就限定于5\%～10\%的范围内；
+\item iOS上的第三方应用程序在后台运行时也只能完成指定范围内的任务。
+\end{compactitem}
+
+除此以外，iOS和Android系统也会在后台进程占用的系统存储空间过多时将其杀死。
+
+
+
+
+\subsection{bg}
+
+bg是在Unix中让进程在后台运行的指令。
+
+bg可将挂起的进程转移到后台继续执行，并且使用job-id来识别进程。
+
+\begin{compactitem}
+\item bg会恢复暂停的进程。
+\item fg可以把进程移回前台。
+\end{compactitem}
+
+
+
+\subsection{fg}
+
+命令fg则可使一个后台进程返回前台（即进程启动时所在的父终端）执行。具体来说，fg唤醒挂起的进程将之移至前台（因而同时会将进程的输入输出流移至用户终端）继续执行。
+
+操作系统内是否包含fg命令亦是“POSIX兼容”的判断标准之一。
+
+
+\subsection{jobs}
+
+
+命令jobs可用于列出与当前终端相关联的所有进程（其中也包括后台进程）及其状态，因而也可用于将后台进程转至前台。
+
+
+
+
+
+
+\section{Daemon Process}
+
+
+守护进程（Daemon）是一种特殊的不间断运行的后台进程，常用于等待特定事件的发生或者预设条件的满足以触发事件，这些进程一般使用最少的系统资源，其所执行的任务也基本不需要来自用户的输入。
+
+当进程配合daemon函数启动后，守护进程就会与其父终端脱离联系，因而也不会在当前终端中输出信息。
+
+
+
+
+
+
+\chapter{Super Daemon}
+
+
+
+
+
+下面以telnet为例来说明安装、设置、启动、查看和管理防火墙的机制。
+
+\begin{compactitem}
+\item 安装telnet服务
+
+\begin{verbatim}
+# rpm -a telnet-server telnet
+\end{verbatim}
+
+\item 检查telnet服务
+
+\begin{verbatim}
+# systemctl list-dependencies telnet
+telnet.service
+# chkconfig telnet
+Note: Forwarding request to 'systemctl is-enabled telnet.socket'.
+enabled
+# grep '^telnet' /etc/services 
+telnet          23/tcp
+telnet          23/udp
+telnets         992/tcp
+telnets         992/udp
+telnetcpcd      3696/tcp                # Telnet Com Port Control
+telnetcpcd      3696/udp                # Telnet Com Port Control
+\end{verbatim}
+
+\item 启动telnet服务
+
+\begin{verbatim}
+# systemctl enable telnet.socket
+\end{verbatim}
+
+\item 查看telnet端口
+
+\begin{verbatim}
+# systemctl list-sockets 
+LISTEN                          UNIT                         ACTIVATES
+/dev/initctl                    systemd-initctl.socket       systemd-initctl.service
+/dev/log                        systemd-journald.socket      systemd-journald.service
+/run/dmeventd-client            dm-event.socket              dm-event.service
+/run/dmeventd-server            dm-event.socket              dm-event.service
+/run/lvm/lvmetad.socket         lvm2-lvmetad.socket          lvm2-lvmetad.service
+/run/systemd/journal/socket     systemd-journald.socket      systemd-journald.service
+/run/systemd/journal/stdout     systemd-journald.socket      systemd-journald.service
+/run/systemd/shutdownd          systemd-shutdownd.socket     systemd-shutdownd.service
+/run/udev/control               systemd-udevd-control.socket systemd-udevd.service
+/var/run/avahi-daemon/socket    avahi-daemon.socket          avahi-daemon.service
+/var/run/cups/cups.sock         cups.socket                  cups.service
+/var/run/dbus/system_bus_socket dbus.socket                  dbus.service
+@ISCSIADM_ABSTRACT_NAMESPACE    iscsid.socket                iscsid.service
+@ISCSID_UIP_ABSTRACT_NAMESPACE  iscsiuio.socket              iscsiuio.service
+[::]:23                         telnet.socket               
+kobject-uevent 1                systemd-udevd-kernel.socket  systemd-udevd.service
+# netstat -nltp | grep systemd
+tcp6       0      0 :::23                   :::*                    LISTEN      1/systemd 
+\end{verbatim}
+
+\item 设置telnet
+
+\begin{verbatim}
+# grep -i 'telnet' /usr/lib/systemd/system/telnet@.service 
+Description=Telnet Server
+ExecStart=-/usr/sbin/in.telnetd
+
+# cat /etc/hosts.allow
+in.telnetd: ALL
+# cat /etc/hosts.deny
+in.telnetd: ALL
+\end{verbatim}
+
+\end{compactitem}
+
+
+
+\chapter{Signal}
+
+
+
+\section{Overview}
+
+在计算机科学中，信号（Signals）是Unix、类Unix以及其他POSIX兼容的操作系统中进程间通信的一种有限制的方式。
+
+信号是一种异步的通知机制，用来提醒进程一个事件已经发生。当一个信号发送给一个进程，操作系统中断了进程正常的控制流程，此时任何非原子操作都将被中断。
+
+如果进程定义了信号的处理函数，那么它将被执行，否则就执行默认的处理函数。
+
+
+
+\section{Signal }
+
+在一个运行的程序的控制终端键入特定的组合键可以向它发送某些信号。
+
+
+
+
+
+\section{Signal Process}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\chapter{Thread}
+
+
+
+
+\section{Multithread}
+
