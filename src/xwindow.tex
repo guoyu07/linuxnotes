@@ -1,0 +1,228 @@
+\part{X Window}
+
+
+\chapter{Overview}
+
+X Window System（简称为X或X11），并且本身也是客户端/服务器架构，因此可以划分为X Server和X Client两部分。
+
+对于Linux来说，X Window System仅仅是一个软件，不过其本身具有的网络功能使其具有跨网络和跨平台的特性。
+
+X Window System最初由MIT于1984年发布并且到1987年时进化到X11，后续的改进都是基于X11进行的，新版的X11R6于1994年发布。
+
+XFree86的目标是“X+Free Software+x86 Hardware”，并且提供了早期的Linux使用的X Window System的主要内核，在Xorg基金会接手X11R6的维护后发布了X11R6.8版本及X11R7.x版本。
+
+\begin{compactitem}
+\item X11本身是软件而非操作系统；
+\item X11通过网络来进行绘制和生成图形界面。
+\end{compactitem}
+
+事实上，X Server启动端口6000来与X Client交互，不过本机运行的X Window System将端口改为套接字（socket）。
+
+如果操作系统上安装了多个X Client（例如Gnome和KDE等），就会使用6001和6002等端口来处理交互。
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+X Window System & Interface & Terminal & Port \\
+\hline
+第一个X & hostnome:0 & tty7 & 6000\\
+\hline
+第二个X & hostname:1 & tty8 & 6001\\
+\hline
+\end{tabular}
+\end{table}
+
+
+
+\section{Component}
+
+
+基本上，X Window System可以划分为X Server和X Client。
+
+\begin{compactitem}
+\item X Server屏幕绘制、提供字体和管理硬件（例如鼠标、键盘等）。
+\item X Client发送应用程序界面信息给X Server，X Server输出结果给显示硬件来绘制图形界面。
+\end{compactitem}
+
+X Server管理客户端硬件时将接收到的来自键盘/鼠标的输入信息转换为图形绘制到屏幕上，但是X Server本身并不知道客户端硬件对显示的影响，只是将硬件设备的行为发送到X Client并让其处理X Server的“事件”。
+
+X Client处理来自X Server的操作并将操作结果转换为绘图数据后回传给X Server，因此X Client也可以称为X Application。
+
+不同的X Client之间互不影响，而且X Client与X Server的隔离使其不需要了解硬件配置与操作系统，只是单纯地处理绘图的数据，本身并不绘图。
+
+除了使用/etc/sysconfig目录下的keyboard/mouse等设置文件来管理硬件之外，X Window也提供了自己的设置文件。
+
+
+Window Manager也是X Client，只是它负责全部X Client的管理，以及提供其他特殊功能。
+
+\begin{compactitem}
+\item 控制显示元素（例如任务栏、桌面背景等）；
+\item 管理虚拟桌面（virtual desktop）；
+\item 提供窗口控制参数（例如窗口大小、背景显示、窗口移动和窗口的最小（大）化等。
+\end{compactitem}
+
+不同的Window Manager使用的显示引擎不尽相同，因此X Client、X Server和Window Manager以及图形应用程序等构成了X Window System。
+
+在桌面系统中，Display Manager提供的登录的环境并加载用户选择的Window Manager和语系等数据，现在Gnome和KDE等都提供了自己的Display Manager（例如Gnome Display Manager（gdm）等）。
+
+
+\section{Configure}
+
+默认情况下，X Server的设置文件位于/etc/X11目录下，相关的显示模块则主要位于/usr/lib/xorg/modules/（或/usr/lib64/xorg/modules/）目录。
+
+\begin{compactitem}
+\item 屏幕字体：/usr/share/X11/fonts/
+\item 显卡芯片组：/usr/lib/xorg/modules/drivers/
+\end{compactitem}
+
+CentOS提供了chkfontpath命令来获取当前系统的字体文件目录，并且使用统一的设置文件（/etc/X11/xorg.conf）来规范X Server。
+
+\section{startx}
+
+在启动X Window System时\footnote{在CentOS和RedHat等系统时，需要启动xfs服务。}，必须首先启动管理硬件和绘图的X Server，然后才能加载X Client。
+
+在命令行界面调用startx可以启动X，startx可以主动查找用户或系统默认的X Server和X Client的设置文件来初始化X，而且用户也可以手动指定startx的外接参数。
+
+\begin{lstlisting}[language=bash]
+startx [ [ client ] options ... ] [ -- [ server ] [ display ] [ -listen ] options ... ]
+\end{lstlisting}
+
+startx查找的设置值可用顺序在X Server和X Client方面是不同的。
+
+\begin{compactitem}
+\item X Server
+
+\begin{compactenum}
+\item startx后接参数
+\item $\sim$/.xserverrc
+\item /etc/X11/xinit/xserverrc
+\item /usr/bin/X
+\end{compactenum}
+
+\item X Client
+
+\begin{compactitem}
+\item startx后接参数
+\item $\sim$/.xinitrc
+\item /etc/X11/xinit/xinitrc
+\item xterm
+\end{compactitem}
+
+\end{compactitem}
+
+
+
+\section{xinit}
+
+实际上，在startx查找和提供了设置文件后，系统会通过调用xinit来启动X。
+
+
+\begin{lstlisting}[language=bash]
+xinit [ [ client ] options ... ] [ -- [ server ] [ display ] options ... ]
+\end{lstlisting}
+
+
+在默认情况下，用户主文件夹下没有.xinitrc等设置文件，因此执行startx实际上调用的命令如下：
+
+
+\begin{lstlisting}[language=bash]
+# xinit /etc/X11/xinit/xinitrc -- /etc/X11/xinit/xserverrc
+\end{lstlisting}
+
+如果xserverrc设置文件也不存在，那么实际上调用的命令如下：
+
+\begin{lstlisting}[language=bash]
+# xinit /etc/X11/xinit/xinitrc -- /usr/bin/X
+\end{lstlisting}
+
+相比xinit，startx的方便之处在于它可以自动快速地找到相应的设置参数，如果单纯执行xinit产生的命令如下：
+
+\begin{lstlisting}[language=bash]
+# xinit xterm -geometry +1+1 -n login -display :0 -- x :0
+\end{lstlisting}
+其中，xterm是X下的虚拟终端机，后面的参数说明xterm的位置和是否登录等信息，最后的\texttt{-display~:0}表示xterm启动在“第:0号的X显示窗口”。
+
+/usr/bin/X是Xorg的链接文件，Xorg是X Server的主程序，xinit命令的效果是启动X Server和加载X Client。
+
+
+X Window System最先需要启动的是X Server，X Server的启动脚本通过/etc/X11/xinit/下的xserverrc来获得的，然后才能加载X Client到X Server。
+
+用户执行/usr/bin/X就是执行系统最原始的X Server可执行文件，Xorg读取/etc/X11/xorg.conf。
+
+默认情况下，用户主文件夹中不存在.xinitrc，因此在启动X Client时将以/etc/X11/xinit/xinitrc作为启动X Client的默认脚本。
+
+xinitrc加载其他的文件参数（例如/etc/X11/xinit/xinitrc-common、/etc/X11/xinit/Xclients和/etc/sysconfig/desktop等），用户可以通过修改/etc/sysconfig/desktop中的DESKTOP参数来设置默认使用的Window Manager。
+
+通常情况下，X Client就是Gnome或KDE，X Server在没有安装Gnome和KDE时就会使用twm窗口管理器来管理用户环境。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
