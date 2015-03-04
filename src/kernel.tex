@@ -1,0 +1,38 @@
+\part{Kernel}
+
+\chapter{Overview}
+
+操作系统的内核的目的在于管理硬件与提供系统核心功能。
+
+
+
+Linux内核其实是一个文件，并且在开机时直接被读入内存中，因此用户可以在获取内核源代码后编译自己的内核，同时也增加了系统稳定性和执行效率。
+
+内核是操作系统中除BIOS之外最早被加载到内存中的，其中包含了所有可以让硬件与软件运作的信息，硬件的驱动程序可以编译为内核模块，也可以直接编译入内核。
+
+
+\section{Directory Structure}
+
+
+Linux内核源代码的目录结构如下：
+
+\begin{compactitem}
+\item arch：与硬件平台有关的选项
+\item block：与块设备相关的设置数据
+\item crypto：内核支持的加密技术（例如md5或des等）
+\item Documentation：帮助文档
+\item drivers：硬件的驱动程序
+\item firmware：固件数据
+\item fs：内核支持的文件系统（例如vfat、nfs、reiserfs等）
+\item include：头（header）文件
+\item init：内核初始化的定义功能（例如挂载与init程序的调用等）
+\item ipc：Linux操作系统程序的通信
+\item kernel：内核的程序、状态、线程、调度、信号等
+\item lib：函数库
+\item mm：与内存单元有关的数据（包括swap和虚拟内存等）
+\item net：与网络有关的协议的数据，以及防火墙模块（net/ipv4/netfilter/*）
+\item security：包含selinux在内的安全性设置
+\item sound：与音效相关的模块
+\item virt：与虚拟化相关的数据
+\item 
+\end{compactitem}•
