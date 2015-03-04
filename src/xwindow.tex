@@ -41,20 +41,22 @@ X Window System & Interface & Terminal & Port \\
 基本上，X Window System可以划分为X Server和X Client。
 
 \begin{compactitem}
-\item X Server屏幕绘制、提供字体和管理硬件（例如鼠标、键盘等）。
-\item X Client发送应用程序界面信息给X Server，X Server输出结果给显示硬件来绘制图形界面。
+\item X Server负责屏幕绘制、提供字体和管理硬件（例如鼠标、键盘等）。
+\item X Client发送应用程序信息给X Server，X Server输出结果给显示硬件来绘制图形界面。
 \end{compactitem}
 
 X Server管理客户端硬件时将接收到的来自键盘/鼠标的输入信息转换为图形绘制到屏幕上，但是X Server本身并不知道客户端硬件对显示的影响，只是将硬件设备的行为发送到X Client并让其处理X Server的“事件”。
 
 X Client处理来自X Server的操作并将操作结果转换为绘图数据后回传给X Server，因此X Client也可以称为X Application。
 
-不同的X Client之间互不影响，而且X Client与X Server的隔离使其不需要了解硬件配置与操作系统，只是单纯地处理绘图的数据，本身并不绘图。
+X Client之间互相独立，而且不同的X Client之间互不影响，而且X Client与X Server的隔离使其不需要了解硬件配置与操作系统，只是单纯地处理绘图的数据，本身并不绘图。
 
 除了使用/etc/sysconfig目录下的keyboard/mouse等设置文件来管理硬件之外，X Window也提供了自己的设置文件。
 
+用户可以启动多个X，每个X显示位置（例如:0、:1等）使用-display来指定
 
-Window Manager也是X Client，只是它负责全部X Client的管理，以及提供其他特殊功能。
+
+Window Manager也是X Client，只是它负责全部X Client的管理，以及提供其他特殊功能（例如窗口的堆叠、移动和最大（小）化等）。
 
 \begin{compactitem}
 \item 控制显示元素（例如任务栏、桌面背景等）；
@@ -78,9 +80,198 @@ Window Manager也是X Client，只是它负责全部X Client的管理，以及�
 
 CentOS提供了chkfontpath命令来获取当前系统的字体文件目录，并且使用统一的设置文件（/etc/X11/xorg.conf）来规范X Server。
 
+\begin{lstlisting}[language=bash]
+# X -version
+X.Org X Server 1.16.3
+Release Date: 2014-12-20
+X Protocol Version 11, Revision 0
+Build Operating System:  3.17.8-300.bz1178975.fc21.x86_64 
+Current Operating System: Linux theqiong 3.18.7-200.fc21.x86_64 #1 SMP Wed Feb 11 21:53:17 UTC 2015 x86_64
+Kernel command line: BOOT_IMAGE=/vmlinuz-3.18.7-200.fc21.x86_64 root=/dev/mapper/fedora_theqiong-root ro rd.lvm.lv=fedora_theqiong/swap rd.lvm.lv=fedora_theqiong/root rhgb quiet LANG=en_US.UTF-8
+Build Date: 31 January 2015  11:23:27PM
+Build ID: xorg-x11-server 1.16.3-2.fc21 
+Current version of pixman: 0.32.6
+	Before reporting problems, check http://wiki.x.org
+	to make sure that you have the latest version.
+\end{lstlisting}
+
+/etc/X11/xorg.conf的内容按段落进行划分，每个段落以Section开始，并以EndSection结束，中间则包含相关设置值。
+
+\begin{lstlisting}[language=bash]
+Section "section name''
+...
+EndSection
+\end{lstlisting}
+
+\begin{table}[htbp]
+\centering
+\caption{X Server的常见设置}
+\begin{tabular}{|l|l|}
+\hline
+Module & 加载到X Server中的模块（某些功能的驱动程序）\\
+\hline
+InputDevice& 键/鼠的格式、以及其他相关输入设备\\
+\hline
+Files & 设置字体目录等\\
+\hline
+Monitor & 监视器的格式（例如水平和垂直更新频率等），与硬件有关\\
+\hline
+Device & 显卡芯片组的相关设置\\
+\hline
+Screen & 屏幕的相关分辨率与色彩深度等，与显示的行为有关\\
+\hline
+ServerLayout & 当前X Server使用的选项\\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{lstlisting}[language=bash]
+Section "ServerLayout"
+	Identifier     "X.org Configured"
+	Screen      0  "Screen0" 0 0
+	InputDevice    "Mouse0" "CorePointer"
+	InputDevice    "Keyboard0" "CoreKeyboard"
+EndSection
+
+Section "Files"
+	ModulePath   "/usr/lib64/xorg/modules"
+	FontPath     "catalogue:/etc/X11/fontpath.d"
+	FontPath     "built-ins"
+EndSection
+
+Section "Module"
+	Load  "glx"
+EndSection
+
+Section "InputDevice"
+	Identifier  "Keyboard0"
+	Driver      "kbd"
+EndSection
+
+Section "InputDevice"
+	Identifier  "Mouse0"
+	Driver      "mouse"
+	Option	    "Protocol" "auto"
+	Option	    "Device" "/dev/input/mice"
+	Option	    "ZAxisMapping" "4 5 6 7"
+EndSection
+
+Section "Monitor"
+	Identifier   "Monitor0"
+	VendorName   "Monitor Vendor"
+	ModelName    "Monitor Model"
+EndSection
+
+Section "Device"
+        ### Available Driver options are:-
+        ### Values: <i>: integer, <f>: float, <bool>: "True"/"False",
+        ### <string>: "String", <freq>: "<f> Hz/kHz/MHz",
+        ### <percent>: "<f>%"
+        ### [arg]: arg optional
+        #Option     "SWcursor"           	# [<bool>]
+        #Option     "HWcursor"           	# [<bool>]
+        #Option     "NoAccel"            	# [<bool>]
+        #Option     "ShadowFB"           	# [<bool>]
+        #Option     "VideoKey"           	# <i>
+        #Option     "WrappedFB"          	# [<bool>]
+        #Option     "GLXVBlank"          	# [<bool>]
+        #Option     "ZaphodHeads"        	# <str>
+        #Option     "PageFlip"           	# [<bool>]
+        #Option     "SwapLimit"          	# <i>
+        #Option     "AsyncUTSDFS"        	# [<bool>]
+        #Option     "AccelMethod"        	# <str>
+	Identifier  "Card0"
+	Driver      "nouveau"
+	BusID       "PCI:1:0:0"
+EndSection
+
+Section "Screen"
+	Identifier "Screen0"
+	Device     "Card0"
+	Monitor    "Monitor0"
+	SubSection "Display"
+		Viewport   0 0
+		Depth     1
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     4
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     8
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     15
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     16
+	EndSubSection
+	SubSection "Display"
+		Viewport   0 0
+		Depth     24
+	EndSubSection
+EndSection
+\end{lstlisting}
+
+在X Server中启动X Font Server（XFS）时，可以执行如下的命令来启动xfs服务，从而可以为X Server提供字体库。
+
+
+
+\begin{lstlisting}[language=bash]
+# /etc/init.d/xfs start
+\end{lstlisting}
+
+X Server使用的字体其实是XFS服务提供，因此X Server需要在启动XFS服务后才能顺利启动。
+
+\begin{compactitem}
+\item XFS的主设置文件在/etc/X11/fs/config
+\item 字体文件保存在/usr/share/X11/fonts/中
+\item XFS的启动脚本位于/etc/init.d/xfs中
+\end{compactitem}
+
+\begin{lstlisting}[language=bash]
+# vim /etc/X11/fs/config
+client-limit = 10
+clone-self = on
+catalogue = /usr/share/X11/fonts/misc:unscaled,
+	/usr/share/X11/fonts/75dpi:unscaled,
+	/usr/share/X11/fonts/100dpi:unscaled,
+	/usr/share/X11/fonts/Type1,
+	/usr/share/X11/fonts/TTF,
+	/usr/share/fonts/default/Type1
+default-point-size = 120
+default-resolutions = 75,75,100,100
+deferglyphs = 16
+use-syslog = on
+no-listen = tcp
+\end{lstlisting}
+
+用户可以使用chkfontpath列出当前支持的字体文件，并且可以追加新的字体文件目录，这样在使用fontconfig提供的font-cache来新建字体缓存文件后就可以使用新的字体。
+
+\begin{lstlisting}[language=bash]
+# chkfontpath
+# mkfontdir
+# font-cache -fsv
+# chkfontpath -a /usr/share/fonts/macfonts
+# /etc/init.d/xfs restart
+# xlsofnts | grep 'Songti'
+\end{lstlisting}
+
+X Server本身可以主动以内置的模块来检测系统硬件，并将硬件与字体的检测结构写入/root/xorg.conf.new，而且可以测试新的文件是否可以顺利运行。
+
+\begin{lstlisting}[language=bash]
+# X -configure :1
+# X -config /root/xorg.conf.new :1
+\end{lstlisting}
+
+
 \section{startx}
 
-在启动X Window System时\footnote{在CentOS和RedHat等系统时，需要启动xfs服务。}，必须首先启动管理硬件和绘图的X Server，然后才能加载X Client。
+在启动X Window System时\footnote{在CentOS和RedHat等系统中，如果在xorg.conf中没有直接写入字体的路径，就需要启动xfs服务来使用字体服务器。}，必须首先启动管理硬件和绘图的X Server，然后才能加载X Client。
 
 在命令行界面调用startx可以启动X，startx可以主动查找用户或系统默认的X Server和X Client的设置文件来初始化X，而且用户也可以手动指定startx的外接参数。
 
@@ -110,6 +301,12 @@ startx查找的设置值可用顺序在X Server和X Client方面是不同的。
 \end{compactitem}
 
 \end{compactitem}
+
+显示器的分辨率等可以使用gtf来进行调整。
+
+\begin{lstlisting}[language=bash]
+gtf h-resolution v-resolution refresh [-v|--verbose] [-f|--fbmode] [-x|--xorgmode]
+\end{lstlisting}
 
 
 
@@ -158,14 +355,65 @@ xinitrc加载其他的文件参数（例如/etc/X11/xinit/xinitrc-common、/etc/
 
 
 
+\chapter{Driver}
+
+在计算机中，硬件驱动程序与内核有关，因此需要使用Development Tools配合kernel-devel等来编译驱动程序。
+
+\section{Nvidia}
+
+
+Xorg基金会针对Nvidia显卡驱动程序提供了nv模块，但是无法提供其他功能，因此用户需要额外安装Nvidia提供的显卡驱动程序。
+
+在安装显卡驱动程序时，用户可以选择是否允许Nvidia编译内核模块，或者自己来编译内核模块，而且还需要安装额外的OpenGL函数库来支持OpenGL应用。
+
+在编译过程中，Nvidia显卡驱动程序主动修改xorg.conf中的Device段落中的Driver项，并且使用“nvidia”来替换“nv”，最终在/usr/lib64/xorg/modules/drivers/目录下新增nvidia\_drv.so。
+
+在升级驱动程序时，Nvidia显卡驱动程序自带的nvidia-installer可以帮助用户更新驱动。
+
+
+
+\begin{lstlisting}[language=bash]
+# nvidia-installer --update
+\end{lstlisting}
+
+
+\section{AMD}
+
+AMD在收购ATI显卡后以Open Source形式开放了显卡驱动程序，用户可以自行编译安装。
 
 
 
 
+\section{Intel}
+
+Intel显卡驱动程序使用Open Source形式开放源代码，并且一般以libdrm命名驱动程序文件。
 
 
-
-
+\begin{lstlisting}[language=bash]
+# locate libdrm
+...
+/usr/lib/libdrm.so.2
+/usr/lib/libdrm.so.2.4.0
+/usr/lib/libdrm_intel.so.1
+/usr/lib/libdrm_intel.so.1.0.0
+/usr/lib/libdrm_nouveau.so.2
+/usr/lib/libdrm_nouveau.so.2.0.0
+/usr/lib/libdrm_radeon.so.1
+/usr/lib/libdrm_radeon.so.1.0.1
+/usr/lib64/libdrm.so
+/usr/lib64/libdrm.so.2
+/usr/lib64/libdrm.so.2.4.0
+/usr/lib64/libdrm_intel.so
+/usr/lib64/libdrm_intel.so.1
+/usr/lib64/libdrm_intel.so.1.0.0
+/usr/lib64/libdrm_nouveau.so
+/usr/lib64/libdrm_nouveau.so.2
+/usr/lib64/libdrm_nouveau.so.2.0.0
+/usr/lib64/libdrm_radeon.so
+/usr/lib64/libdrm_radeon.so.1
+/usr/lib64/libdrm_radeon.so.1.0.1
+...
+\end{lstlisting}
 
 
 
