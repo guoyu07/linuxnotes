@@ -2,8 +2,12 @@
 
 \chapter{Overview}
 
-操作系统的内核的目的在于管理硬件与提供系统核心功能。
+操作系统的内核的目的在于管理硬件与提供系统核心功能，用戶可以根椐系統规划编译合适的内核。
 
+\begin{lstlisting}[language=bash]
+# make mrproper
+# make clean
+\end{lstlisting}
 
 
 Linux内核其实是一个文件，并且在开机时直接被读入内存中，因此用户可以在获取内核源代码后编译自己的内核，同时也增加了系统稳定性和执行效率。
@@ -34,5 +38,5 @@ Linux内核源代码的目录结构如下：
 \item security：包含selinux在内的安全性设置
 \item sound：与音效相关的模块
 \item virt：与虚拟化相关的数据
-\item 
-\end{compactitem}•
+\end{compactitem}
+
