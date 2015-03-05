@@ -7,7 +7,7 @@
 
 
 
-Linux内核其实是一个文件，并且在开机时直接被读入内存中，因此用户可以在获取内核源代码后编译自己的内核，同时也增加了系统稳定性和执行效率。
+Linux内核其实是一个文件，包含了检测程序以及驱动程序等，并且在开机时直接被读入内存中，因此用户可以在获取内核源代码后编译自己的内核，这样可以增加系统稳定性和执行效率。
 
 内核是操作系统中除BIOS之外最早被加载到内存中的，其中包含了所有可以让硬件与软件运作的信息，硬件的驱动程序可以编译为内核模块，也可以直接编译入内核。
 
@@ -116,7 +116,7 @@ vmlinuz: Linux kernel x86 boot executable bzImage, version 3.xx.x.x86_64
 \section{Configure Module}
 
 
-用户可以在Linux操作系统的/lib/modules/\$(uname -r)/目录下找到系统模块，并且可以使用make来安装模块。
+用户可以在Linux操作系统的/lib/modules/\$(uname -r)/目录下找到系统模块（*.ko），并且可以使用make来安装模块。
 
 
 \begin{lstlisting}[language=bash]
@@ -139,7 +139,13 @@ vmlinuz: Linux kernel x86 boot executable bzImage, version 3.xx.x.x86_64
 
 在模块目录下提供了相应的文件来解决模块的依赖关系问题。例如，modules.dep文件记录了内核模块的依赖关系，用户可以使用modprobe指令依据modules.dep来加载模块。
 
-在使用make编译和安装单一模块后，可以使用depmod命令建立相关性。
+在使用make编译和安装单一模块后，可以使用depmod命令建立相关性，这样就可以通过modprobe命令来直接使用模块。
+
+\begin{lstlisting}[language=bash]
+# depmod -a
+\end{lstlisting}
+
+所有的模块都是仅针对当前内核有效，因此用户将内核功能编译为模块的局限就在于当内核被更新（例如使用自动更新机制进行在线更新）时，需要重新编译和安装模块。
 
 
 \section{Configure Multiboot}
