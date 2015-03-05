@@ -4,10 +4,7 @@
 
 操作系统的内核的目的在于管理硬件与提供系统核心功能，用戶可以根椐系統规划编译合适的内核。
 
-\begin{lstlisting}[language=bash]
-# make mrproper
-# make clean
-\end{lstlisting}
+
 
 
 Linux内核其实是一个文件，并且在开机时直接被读入内存中，因此用户可以在获取内核源代码后编译自己的内核，同时也增加了系统稳定性和执行效率。
@@ -39,4 +36,156 @@ Linux内核源代码的目录结构如下：
 \item sound：与音效相关的模块
 \item virt：与虚拟化相关的数据
 \end{compactitem}
+
+\section{Configure Kernel}
+
+在第一次编译源代码之前需要对内部的残留文件（例如目标文件和相关的设置文件）进行清理，这样就可以将包括内核功能选择文件在内的残留文件删除，从而获得干净的源代码文件。
+
+\begin{lstlisting}[language=bash]
+# make mrproper
+\end{lstlisting}
+
+在后续对源代码进行编译时只需删除类似目标文件等在编译过程中产生的中间文件，不再需要删除设置文件。
+
+\begin{lstlisting}[language=bash]
+# make clean
+\end{lstlisting}
+
+在Linux的操作系统的/boot/目录下的以config-xxx开头的文件是内核功能列表文件，用户在对内核功能进行选择之后就创建了配置文件，从而可以控制编译动作。
+
+
+不同的Linux发行版中都会在/usr/src/kernels/linux-xxx/目录下保存一个.config文件，其实这就是/boot/config-xxx文件。
+
+
+\begin{compactitem}
+\item \texttt{make ~menuconfig}
+\item \texttt{make ~oldconfig}
+\item \texttt{make ~xconfig}
+\item \texttt{make ~gconfig}
+\item \texttt{make ~config}
+\end{compactitem}
+
+
+
+用户在编译内核时，可以将功能编译进内核，也可以编译为模块，不过尽量保持内核小而美。
+
+\begin{lstlisting}[language=bash]
+[*]	64-bit kernel
+	General setup
+[*]	Enable loadable module support
+-*- 	Enable the block layer
+	Processor type and feature
+	Power Management and ACPI options
+	Bus options (PCI etc.)
+	Executable file formats / Emulations
+	Networking support
+	Device Drivers
+	Firmware Drivers
+	File Systems
+	Kernel hacking
+	Security options
+-*- 	Cryptographic API
+[*]	Virtualization 
+	Library routines
+\end{lstlisting}
+
+在编译内核和内核模块时，可以根据需求来使用的下面的命令来编译出不同的结果。
+
+\begin{compactitem}
+\item \texttt{make ~vmlinux}：未经压缩的内核
+\item \texttt{make ~modules}：仅内核模块
+\item \texttt{make ~bzImage}：经过压缩的内核（默认）
+\item \texttt{make ~all}：编译并压缩内核和内核模块
+\end{compactitem}
+
+实际上，在/boot/目录下的内核文件通常都是经过压缩的，在make命令中使用bzImage参数可以创建经过压缩的内核。
+
+\beign{lstlisting}[language=bash]
+# file /boot/vmlinuz
+vmlinuz: Linux kernel x86 boot executable bzImage, version 3.xx.x.x86_64
+\end{lstlisting}
+
+一般情况下，使用顺序如下的make指令来编译内核及内核模块，并且将在/usr/src/kernels/linux-xxx/arch/x86/boot/目录下产生相应的最终文件，需要用户自己放置到系统的相关路径中。
+
+\begin{lstlisting}[language=bash]
+# make clean
+# make bzImage
+# make modules
+\end{lstlisting}
+
+\section{Configure Module}
+
+
+用户可以在Linux操作系统的/lib/modules/\$(uname -r)/目录下找到系统模块，并且可以使用make来安装模块。
+
+
+\begin{lstlisting}[language=bash]
+# make modules_install
+\end{lstlisting}
+
+内核所支持的模块包括直接编译到内核中的和额外加载的，模块可以简单想象为驱动程序。
+
+\begin{compactitem}
+\item 内核模块放置在/lib/modules/\$(uname -r)/kernel/目录
+\item 驱动程序放置在/lib/modules/\$(uname -r)/kernel/drivers/目录
+\end{compactitem}
+
+只要可以使用内核所提供的源文件中的头文件（header file），就可以获取驱动程序所需要的函数库或头的定义，因此模块也可以单个进行编译和安装。
+
+\begin{compactitem}
+\item /lib/modules/\$(uname -r)/build
+\item /lib/modules/\$(uname -r)/source
+\end{compactitem}
+
+在模块目录下提供了相应的文件来解决模块的依赖关系问题。例如，modules.dep文件记录了内核模块的依赖关系，用户可以使用modprobe指令依据modules.dep来加载模块。
+
+在使用make编译和安装单一模块后，可以使用depmod命令建立相关性。
+
+
+\section{Configure Multiboot}
+
+使用Grub可以在保留旧版的内核的同时移动新的内核到主机中，并且使用mkinitrd命令新建对应的Initial Ram Disk（initrd）。
+
+用户可以编辑开机菜单来创建多重启动系统。
+
+\begin{compactitem}
+\item Grub：/boot/grub/menu.lst
+\item Grub2：/boot/grub2/grub.cfg
+\end{compactitem}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
