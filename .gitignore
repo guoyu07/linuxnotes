@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+# ---> TeX
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
@@ -13,7 +17,11 @@
 # these rules might exclude image files for figures etc.
 # *.ps
 # *.eps
+<<<<<<< HEAD
 *.pdf
+=======
+# *.pdf
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 
 ## Bibliography auxiliary files (bibtex/biblatex/biber):
 *.bbl
@@ -26,16 +34,30 @@
 
 ## Build tool auxiliary files:
 *.fdb_latexmk
+<<<<<<< HEAD
+=======
+*.synctex
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 *.synctex.gz
 *.synctex.gz(busy)
 *.pdfsync
 
 ## Auxiliary and intermediate files from other packages:
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 # algorithms
 *.alg
 *.loa
 
+<<<<<<< HEAD
+=======
+# achemso
+acs-*.bib
+
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 # amsthm
 *.thm
 
@@ -66,9 +88,23 @@
 *.glo
 *.gls
 
+<<<<<<< HEAD
 # hyperref
 *.brf
 
+=======
+# gnuplottex
+*-gnuplottex-*
+
+# hyperref
+*.brf
+
+# knitr
+*-concordance.tex
+*.tikz
+*-tikzDictionary
+
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 # listings
 *.lol
 
@@ -81,14 +117,28 @@
 # minitoc
 *.maf
 *.mtc
+<<<<<<< HEAD
 *.mtc0
 
 # minted
+=======
+*.mtc[0-9]
+*.mtc[1-9][0-9]
+
+# minted
+_minted*
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 *.pyg
 
 # morewrites
 *.mw
 
+<<<<<<< HEAD
+=======
+# mylatexformat
+*.fmt
+
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 # nomencl
 *.nlo
 
@@ -102,8 +152,24 @@
 *.sympy
 sympy-plots-for-*.tex/
 
+<<<<<<< HEAD
+=======
+# TikZ & PGF
+*.dpth
+*.md5
+*.auxlock
+
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
 # todonotes
 *.tdo
 
 # xindy
 *.xdy
+<<<<<<< HEAD
+=======
+
+# WinEdt
+*.bak
+*.sav
+
+>>>>>>> d767bbcee9e0d8ab73759217ba60208b15c60a8d
