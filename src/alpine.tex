@@ -1,0 +1,51 @@
+\part{Alpine Linux}
+
+
+\chapter{Overview}
+
+Alpine Linux是一个基于musl和BusyBox的Linux发行版，其最早是一个LEAF project的一个fork，二者的分歧在于LEAF期望产生一个更小体积的发布版，而Alpine希望在减小体积的同时仍然能够支持重量级的软件包（例如Squid和Samba等），并且能够支持更新的Linux内核。
+
+Alpine Linux在默认的Linux内核上打了PaX和grsecurity补丁。
+
+
+
+Alpine Linux compiles all user space binaries as position-independent executables with stack-smashing protection.
+
+作为可选的支持，ACF（Alpine Configuration Framework）是一个类似于Debian debconf的应用程序配置框架，可以用来配置一个Alpine Linux Machine。
+
+Apline Linux使用的C标准库已经从最初的uClibc转换成了musl，它可以二进制方面部分实现对glibc的兼容。
+
+
+
+
+\section{Package Managerment}
+
+
+Alpine Linux使用自己的包管理器——apk-tools，并且包含了大多数通用的软件包（例如GNOME、Xfce和FireFox等）。
+
+\section{Run-from-RAM}
+
+Alpine Linux可以被定制安装为从内存启动，而且LBU（Alpine Local Backup）工具可以将所有配置文件备份到一个APK overlay（通常缩写为apkovl）的tar.gz文件，默认情况下将所有已更改文件的副本存储在/etc中。
+
+\section{Init System}
+
+Alpine Linux使用OpenRC而非systemd作为初始化工具。
+
+
+\section{Container}
+
+默认的Alpine Linux（除内核外）只有4~5MB，因此部署Alpine的容器大小可以缩减到8MB左右。
+
+Alpine Linux比大多数分发基础镜像都小得多，不过Alpine Linux使用的musl libc可能导致某些软件遇到问题（取决于libc要求的深度），不过大多数软件没有这个问题。
+
+基于Alpine的最小化镜像往往并不包含git或bash等工具，因此需要在自己的Dockerfile中添加需要的工具。
+
+
+\section{Security}
+
+默认的Alpine Linux核心中包含了PaX和grsec，可以减少类似于vmsplice()本地root漏洞的攻击的影响，而且所有的Alpine Linux软件包都使用了堆栈溢出保护编译来减轻用户态缓冲区溢出的影响。
+
+
+
+
+
